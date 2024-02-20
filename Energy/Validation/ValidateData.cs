@@ -13,7 +13,7 @@ namespace Energy.Validation
             try
             {
                 // Check if keys value is not null or empty
-                if (string.IsNullOrEmpty(Utility.InputFolderPath) || string.IsNullOrEmpty(Utility.OutputFolderPath))
+                if (string.IsNullOrEmpty(Common.InputFolderPath) || string.IsNullOrEmpty(Common.OutputFolderPath))
                 {
                     isValid = false;
                     Console.WriteLine(Constants.FOLDER_PATH_NOTEXIST);

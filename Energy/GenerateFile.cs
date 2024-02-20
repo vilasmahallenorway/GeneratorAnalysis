@@ -1,35 +1,16 @@
-﻿using System.Xml.Linq;
+﻿using Energy.Utilities;
+using System.Xml.Linq;
 
-namespace Energy.Utilities
+namespace Energy
 {
-    public class FolderWatcher
+    public static class GenerateFile
     {
-        public void WatcherSetup()
-        {
-            // Create a new FileSystemWatcher instance
-            FileSystemWatcher watcher = new FileSystemWatcher();
-
-            // Set the path to the folder you want to monitor
-            watcher.Path = Utility.InputFolderPath;
-
-            // Monitor only XML files
-            watcher.Filter = "*.xml";
-
-            // Subscribe to the Created event
-            watcher.Created += OnCreated;
-
-            // Begin watching the folder
-            watcher.EnableRaisingEvents = true;
-
-            Console.WriteLine($"Monitoring folder {Utility.InputFolderPath}. Press any key to exit.");
-            Console.ReadKey();
-
-            // Stop watching the folder when a key is pressed
-            watcher.EnableRaisingEvents = false;
-            watcher.Dispose();
-        }
-
-        static void OnCreated(object sender, FileSystemEventArgs e)
+        /// <summary>
+        /// FileWatcher event triggers when file is arrive in specified input folder   
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public static void OnCreated(object sender, FileSystemEventArgs e)
         {
             // Process the newly created XML file
             Console.WriteLine($"Detected new XML file: {e.Name}");
@@ -48,15 +29,19 @@ namespace Energy.Utilities
                 XNamespace xsd = "http://www.w3.org/2001/XMLSchema";
 
                 // Create the XML document with the root element and namespaces
-                XDocument docs = new XDocument(
+                XDocument docs = new(
                     new XDeclaration("1.0", "utf-8", "yes"),
                     new XElement(Constants.GENERATION_OUTPUT,
                         new XAttribute(XNamespace.Xmlns + "xsi", xsi),
                         new XAttribute(XNamespace.Xmlns + "xsd", xsd), totals
                     )
                 );
+                // Save file to output folder specified in appsetting
+                string outputFilePath = Path.Combine(Common.OutputFolderPath, Common.GenerateUniqueFileName());
+                docs.Save(outputFilePath);
 
-                docs.Save(Utility.OutputFolderPath);
+                // after creating file in output folder , remove all xml files from input folder 
+                Common.RemoveXmlFiles(Common.InputFolderPath);
             }
             catch (Exception ex)
             {

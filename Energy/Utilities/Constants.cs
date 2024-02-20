@@ -25,9 +25,5 @@ namespace Energy.Utilities
         public const string GENERATION_OUTPUT= "GenerationOutput";
         public const string FOLDER_PATH_NOTEXIST = "Please specify Input and Output folder path in AppSetting file";
     }
-    public static class Utility
-    {
-        public static string OutputFolderPath = ConfigurationManager.AppSettings[Constants.OUTPUT_FOLDER_PATH];
-        public static string InputFolderPath = ConfigurationManager.AppSettings[Constants.INPUT_FOLDER_PATH];
-    }
+   
 }

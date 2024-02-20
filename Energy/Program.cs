@@ -1,18 +1,24 @@
-﻿using Energy.Utilities;
-using Energy.Validation;
+﻿using Energy.Validation;
 namespace Energy
 {
     public class Program
     {
         static void Main(string[] args)
         {
-            bool folderPathIsExist = ValidateData.VerifyAppSetting();
-            if (!folderPathIsExist)
-                return;
+            try
+            {
+                // Ensure keys exist in App setting with mentioned physical path
+                bool folderPathIsExist = ValidateData.VerifyAppSetting();
+                if (!folderPathIsExist)
+                    return;
 
-            // Create an instance of FolderWatcher and call WatcherSetup
-            FolderWatcher folderWatcher = new();
-            folderWatcher.WatcherSetup();
+                // Call FileWatcher if xml file is exist
+                FolderWatcher.WatcherSetup();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception while reading or writing file", ex.Message);
+            }
         }
     }
 }
