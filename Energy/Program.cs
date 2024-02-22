@@ -7,12 +7,12 @@ namespace Energy
         {
             try
             {
-                // Ensure keys exist in App setting with mentioned physical path
+                // Ensure keys exist in App setting with physical path 
                 bool folderPathIsExist = ValidateData.VerifyAppSetting();
                 if (!folderPathIsExist)
                     return;
 
-                // Call FileWatcher if xml file is exist
+                // FileWatcher trigger event when xml file arrives in input folder
                 FolderWatcher.WatcherSetup();
             }
             catch (Exception ex)

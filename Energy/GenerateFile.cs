@@ -1,6 +1,5 @@
 ﻿using Energy.Utilities;
 using System.Xml.Linq;
-
 namespace Energy
 {
     public static class GenerateFile
@@ -15,27 +14,22 @@ namespace Energy
             // Process the newly created XML file
             Console.WriteLine($"Detected new XML file: {e.Name}");
 
-            // XML processing logic here
+            // XML processing logic
             try
             {
                 string xmlContent = File.ReadAllText(e.FullPath);
                 if (string.IsNullOrEmpty(xmlContent)) return;
 
                 XDocument doc = XDocument.Parse(xmlContent);
-                XElement totals = Generator(doc);  //WindGenerator(doc);
+                XElement totals = Generator(doc);
 
                 // Define the namespaces
                 XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
                 XNamespace xsd = "http://www.w3.org/2001/XMLSchema";
 
                 // Create the XML document with the root element and namespaces
-                XDocument docs = new(
-                    new XDeclaration("1.0", "utf-8", "yes"),
-                    new XElement(Constants.GENERATION_OUTPUT,
-                        new XAttribute(XNamespace.Xmlns + "xsi", xsi),
-                        new XAttribute(XNamespace.Xmlns + "xsd", xsd), totals
-                    )
-                );
+                XDocument docs = CreateDocument(totals, xsi, xsd);
+
                 // Save file to output folder specified in appsetting
                 string outputFilePath = Path.Combine(Common.OutputFolderPath, Common.GenerateUniqueFileName());
                 docs.Save(outputFilePath);
@@ -50,6 +44,24 @@ namespace Energy
         }
 
         /// <summary>
+        /// Create final xml document
+        /// </summary>
+        /// <param name="totals"></param>
+        /// <param name="xsi"></param>
+        /// <param name="xsd"></param>
+        /// <returns></returns>
+        private static XDocument CreateDocument(XElement totals, XNamespace xsi, XNamespace xsd)
+        {
+            return new(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(Constants.GENERATION_OUTPUT,
+                    new XAttribute(XNamespace.Xmlns + "xsi", xsi),
+                    new XAttribute(XNamespace.Xmlns + "xsd", xsd), totals
+                )
+            );
+        }
+
+        /// <summary>
         /// Processing input file perform calculations 
         /// </summary>
         /// <param name="doc"></param>
@@ -57,9 +69,12 @@ namespace Energy
         private static XElement Generator(XDocument doc)
         {
             XElement totals = GenerateTotals(doc);
-            XElement maxEmissionGenerators = GenerateMaxEmissionGenerators(doc);
 
+            XElement maxEmissionGenerators = GenerateMaxEmissionGenerators(doc);
             totals.Add(maxEmissionGenerators);
+
+            XElement maxHeatGenerators = HeatDetailsGenerators(doc);
+            totals.Add(maxHeatGenerators);
 
             return totals;
         }
@@ -77,7 +92,6 @@ namespace Energy
 
             return totals;
         }
-
         static XElement GenerateMaxEmissionGenerators(XDocument doc)
         {
             var coalDays = GetDays(doc, Constants.COAL_GENERATOR, CalculateCoalDayEmissions);
@@ -89,6 +103,19 @@ namespace Energy
 
             return maxEmissionGenerators;
         }
+        static XElement HeatDetailsGenerators(XDocument doc)
+        {
+            var heatElements = doc.Descendants(Constants.COAL_GENERATOR)
+                  .Select(generator => new XElement(Constants.ACTUALHEAT_RATE,
+                      new XElement(Constants.NAME, generator.Element(Constants.NAME).Value),
+                      new XElement(Constants.HEAT_RATE, CalculateActualCoalHeatRate(double.Parse(generator.Element(Constants.TOTALHEATINPUT).Value), double.Parse(generator.Element(Constants.ACTUALNETGENERATION).Value)))
+                     ));
+
+            var heatGenerators = new XElement(Constants.ACTUALHEAT_RATES);
+            AddDaysToElement(heatElements, heatGenerators);
+            return heatGenerators;
+
+        }
 
         static IEnumerable<XElement> GetGenerators(XDocument doc, string generatorType, Func<XElement, double> calculationFunction)
         {
@@ -96,6 +123,7 @@ namespace Energy
                       .Select(generator => new XElement(Constants.GENERATOR,
                           new XElement(Constants.NAME, generator.Element(Constants.NAME).Value),
                           new XElement(Constants.TOTAL, calculationFunction(generator))));
+
         }
 
         static IEnumerable<XElement> GetDays(XDocument doc, string generatorType, Func<XElement, double, double> calculationFunction)
@@ -170,10 +198,16 @@ namespace Energy
             });
         }
 
+        static double CalculateActualCoalHeatRate(double totalHeatInput, double actualNetGeneration)
+        {
+            return totalHeatInput / actualNetGeneration;
+        }
+
         static double CalculateCoalDayEmissions(XElement day, double calculateCoalDayEmissions)
         {
             return double.Parse((string)day.Element(Constants.ENERGY)) * calculateCoalDayEmissions * 0.812;
         }
+
 
         static double CalculateGasDayEmissions(XElement day, double calculateGasDayEmissions)
         {

@@ -24,7 +24,7 @@ namespace Energy
             Console.WriteLine($"Monitoring folder {Common.InputFolderPath}. Press any key to exit.");
             Console.ReadKey();
 
-            // Stop watching the folder when a key is pressed
+            // If you want to stop watching the folder when a key is pressed, set value to false
             watcher.EnableRaisingEvents = true;
             watcher.Dispose();
         }

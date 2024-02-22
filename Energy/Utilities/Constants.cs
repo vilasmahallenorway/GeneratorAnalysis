@@ -22,8 +22,15 @@ namespace Energy.Utilities
         public const string OFFSHORE = "Offshore";
         public const string TOTAL = "Total";
         public const string EMISSION = "Emission";
-        public const string GENERATION_OUTPUT= "GenerationOutput";
+        public const string GENERATION_OUTPUT = "GenerationOutput";
         public const string FOLDER_PATH_NOTEXIST = "Please specify Input and Output folder path in AppSetting file";
+
+        public const string HEAT_RATE = "HeatRate";
+        public const string ACTUALHEAT_RATES = "ActualHeatRates";
+        public const string ACTUALHEAT_RATE = "ActualHeatRate";
+        public const string ACTUALNETGENERATION = "ActualNetGeneration";
+        public const string TOTALHEATINPUT = "TotalHeatInput";
+
     }
-   
+
 }
