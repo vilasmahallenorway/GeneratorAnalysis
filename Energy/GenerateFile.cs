@@ -23,12 +23,9 @@ namespace Energy
                 XDocument doc = XDocument.Parse(xmlContent);
                 XElement totals = Generator(doc);
 
-                // Define the namespaces
-                XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
-                XNamespace xsd = "http://www.w3.org/2001/XMLSchema";
-
+             
                 // Create the XML document with the root element and namespaces
-                XDocument docs = CreateDocument(totals, xsi, xsd);
+                XDocument docs = CreateDocument(totals);
 
                 // Save file to output folder specified in appsetting
                 string outputFilePath = Path.Combine(Common.OutputFolderPath, Common.GenerateUniqueFileName());
@@ -50,8 +47,12 @@ namespace Energy
         /// <param name="xsi"></param>
         /// <param name="xsd"></param>
         /// <returns></returns>
-        private static XDocument CreateDocument(XElement totals, XNamespace xsi, XNamespace xsd)
+        private static XDocument CreateDocument(XElement totals)
         {
+            // Define the namespaces
+            XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+            XNamespace xsd = "http://www.w3.org/2001/XMLSchema";
+
             return new(
                 new XDeclaration("1.0", "utf-8", "yes"),
                 new XElement(Constants.GENERATION_OUTPUT,
@@ -68,7 +69,7 @@ namespace Energy
         /// <returns>xElement</returns>
         private static XElement Generator(XDocument doc)
         {
-            XElement totals = GenerateTotals(doc);
+            XElement totals = CalculateDailyGenerationsForOilCoilGas(doc);
 
             XElement maxEmissionGenerators = GenerateMaxEmissionGenerators(doc);
             totals.Add(maxEmissionGenerators);
@@ -79,7 +80,7 @@ namespace Energy
             return totals;
         }
 
-        static XElement GenerateTotals(XDocument doc)
+        static XElement CalculateDailyGenerationsForOilCoilGas(XDocument doc)
         {
             var windGenerators = GetGenerators(doc, Constants.WIND_GENERATOR, CalculateWindGenerationValue);
             var gasGenerators = GetGenerators(doc, Constants.GAS_GENERATOR, CalculateGasEmissions);
@@ -114,7 +115,6 @@ namespace Energy
             var heatGenerators = new XElement(Constants.ACTUALHEAT_RATES);
             AddDaysToElement(heatElements, heatGenerators);
             return heatGenerators;
-
         }
 
         static IEnumerable<XElement> GetGenerators(XDocument doc, string generatorType, Func<XElement, double> calculationFunction)
@@ -129,7 +129,7 @@ namespace Energy
         static IEnumerable<XElement> GetDays(XDocument doc, string generatorType, Func<XElement, double, double> calculationFunction)
         {
 
-            double calculateDayEmissions = generatorType == Constants.COAL_GENERATOR ? double.Parse((string)doc.Descendants(Constants.COAL_GENERATOR).First().Element(Constants.EMISSIONS_RATING)) : double.Parse((string)doc.Descendants(Constants.GAS_GENERATOR).First().Element(Constants.EMISSIONS_RATING));
+            double dayEmissions = generatorType == Constants.COAL_GENERATOR ? double.Parse((string)doc.Descendants(Constants.COAL_GENERATOR).First().Element(Constants.EMISSIONS_RATING)) : double.Parse((string)doc.Descendants(Constants.GAS_GENERATOR).First().Element(Constants.EMISSIONS_RATING));
 
             return doc.Descendants(generatorType)
                       .Descendants(Constants.DAY)
@@ -137,7 +137,7 @@ namespace Energy
                       {
                           Name = (string)doc.Descendants(generatorType).First().Element(Constants.NAME),
                           Date = (string)day.Element(Constants.DATE),
-                          Emission = calculationFunction(day, calculateDayEmissions)
+                          Emission = calculationFunction(day, dayEmissions)
                       })
                       .Where(day => day.Emission > 0)
                       .Select(day => new XElement(Constants.DAY,
@@ -203,11 +203,10 @@ namespace Energy
             return totalHeatInput / actualNetGeneration;
         }
 
-        static double CalculateCoalDayEmissions(XElement day, double calculateCoalDayEmissions)
+        static double CalculateCoalDayEmissions(XElement day, double coalDayEmissions)
         {
-            return double.Parse((string)day.Element(Constants.ENERGY)) * calculateCoalDayEmissions * 0.812;
+            return double.Parse((string)day.Element(Constants.ENERGY)) * coalDayEmissions * 0.812;
         }
-
 
         static double CalculateGasDayEmissions(XElement day, double calculateGasDayEmissions)
         {
